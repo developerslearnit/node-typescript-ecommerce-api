@@ -18,12 +18,30 @@ export const addCategory = async (
   res: express.Response
 ) => {
   try {
-    const { name } = req.body;
-    console.log('[CATEGORY_ADD_REQUEST]', name);
+    const { name, metatitle, metadesc, imageurl, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Invalid request' });
+    }
+
+    const existingCategory = await db.category.findFirst({
+      where: {
+        name: name,
+      },
+    });
+
+    if (existingCategory) {
+      return res.status(400).json({ message: 'Category already exists' });
+    }
+
     const category = await db.category.create({
       data: {
         name,
         slug: name.toLowerCase().replace(' ', '-'),
+        metaTitle: metatitle,
+        metaDescription: metadesc,
+        imageUrl: imageurl,
+        description: description,
       },
     });
 

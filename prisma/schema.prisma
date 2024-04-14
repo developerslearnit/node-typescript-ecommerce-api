@@ -15,11 +15,11 @@ model Category {
   name String @unique
   slug String @unique
 
-  imageUrl        String?
-  description     String?
-  metaTitle       String?
-  metaDescription String?
-  published       Boolean @default(true)
+  image_url        String? @map("imageUrl")
+  description      String?
+  meta_title       String? @map("metaTitle")
+  meta_description String? @map("metaDescription")
+  published        Boolean @default(true)
 
   products Product[]
 
@@ -31,18 +31,20 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name      String  @unique
-  slug      String  @unique
-  price     Float
-  oldPrice  Float   @default(0)
-  published Boolean @default(true)
-
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  name        String   @unique
+  slug        String   @unique
+  price       Float
+  old_price   Float    @default(0) @map("oldPrice")
+  published   Boolean  @default(true)
+  image_url   String   @map("imageUrl")
+  description String   @default("")
+  rating      Float    @default(0)
+  category_id String   @map("categoryId")
+  category    Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
 
   images ProductImage[]
 
-  @@index([categoryId])
+  @@index([category_id])
   @@map("product")
 }
 
@@ -51,11 +53,11 @@ model ProductImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  productId String
-  imageUrl  String
-  product   Product @relation(fields: [productId], references: [id])
+  product_id String  @map("productId")
+  image_url  String  @map("imageUrl")
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@index([productId])
+  // @@index([product_id])
   @@map("productImage")
 }
 
@@ -64,15 +66,23 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  firstname String
-  lastname  String
-  email     String @unique
+  customer_id String  @unique @map("customerId")
+  first_name  String? @map("firstname")
+  last_name   String? @map("lastname")
+  email       String  @unique
+  avatar_url  String? @map("avatarUrl")
+  phone       String? @map("phoneNumber")
+  role        Role    @default(CUSTOMER)
 
   addresses Address[]
-
-  orders Order[]
+  orders    Order[]
 
   @@map("customer")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
 }
 
 model Address {
@@ -80,18 +90,25 @@ model Address {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  streetAddress String
-  city          String
-  state         String
-  country       String
-  zipCode       String
-  isDefault     Boolean @default(false)
+  address_1    String      @map("addressLine1")
+  address_2    String?     @map("addressLine2")
+  city         String
+  state        String
+  country      String
+  zip_code     String      @map("zipCode")
+  address_type AddressType @default(billing) @map("addressType")
+  is_default   Boolean     @default(false) @map("isDefault")
 
-  custormerId String
-  customer    Customer @relation(fields: [custormerId], references: [id], onDelete: Cascade)
+  customer_id String   @map("customerId")
+  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
 
-  @@index([custormerId])
+  @@index([customer_id])
   @@map("address")
+}
+
+enum AddressType {
+  shipping
+  billing
 }
 
 model Order {
@@ -99,14 +116,14 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  status     OrderStatus @default(PENDING)
-  totalPrice Float
+  status      OrderStatus @default(PENDING)
+  total_price Float       @map("totalPrice")
 
-  orderItems  OrderItem[]
-  custormerId String
-  customer    Customer    @relation(fields: [custormerId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+  custormer_id String      @map("customerId")
+  customer     Customer    @relation(fields: [custormer_id], references: [id], onDelete: Cascade)
 
-  @@index([custormerId])
+  @@index([custormer_id])
   @@map("order")
 }
 
@@ -121,12 +138,22 @@ model OrderItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  productId String
-  quantity  Int
+  product_id String @map("productId")
+  quantity   Int
 
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order_id String @map("orderId")
+  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
-  @@index([orderId])
+  @@index([order_id])
   @@map("orderItem")
+}
+
+model ApiClient {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  first_name String?  @map("firstname")
+  last_name  String?  @map("lastname")
+  email      String   @unique
+  api_key    String   @map("apikey")
 }

@@ -1,27 +1,52 @@
-import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { db } from '../lib/db';
+import { HttpCode, HttpError } from '../exceptions/http-error';
+import slugify from 'slugify';
 
 export const getCategories = async (
-  req: express.Request,
-  res: express.Response
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
-    const categories = await db.category.findMany();
-    return res.status(200).json(categories || []);
+    const categories = await db.category.findMany({
+      select: {
+        id: true,
+        meta_description: true,
+        meta_title: true,
+        image_url: true,
+        slug: true,
+        name: true,
+      },
+    });
+
+    return res.status(HttpCode.OK).json({ hasError: false, data: categories });
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    next(
+      new HttpError({
+        httpCode: HttpCode.INTERNAL_SERVER_ERROR,
+        description: 'Internal server Error ' + error.message,
+      })
+    );
   }
 };
 
 export const addCategory = async (
-  req: express.Request,
-  res: express.Response
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
-    const { name, metatitle, metadesc, imageurl, description } = req.body;
+    const { name, meta_title, meta_description, image_url, description } =
+      req.body;
 
     if (!name) {
-      return res.status(400).json({ message: 'Invalid request' });
+      return next(
+        new HttpError({
+          httpCode: HttpCode.BAD_REQUEST,
+          description: 'Category name is required',
+        })
+      );
     }
 
     const existingCategory = await db.category.findFirst({
@@ -31,23 +56,41 @@ export const addCategory = async (
     });
 
     if (existingCategory) {
-      return res.status(400).json({ message: 'Category already exists' });
+      return next(
+        new HttpError({
+          httpCode: HttpCode.BAD_REQUEST,
+          description: 'Category name already exists',
+        })
+      );
     }
 
-    const category = await db.category.create({
+    let slug = slugify(name);
+
+    if (slug.length > 150) {
+      slug = slug.substring(0, 150);
+    }
+
+    await db.category.create({
       data: {
         name,
-        slug: name.toLowerCase().replace(' ', '-'),
-        metaTitle: metatitle,
-        metaDescription: metadesc,
-        imageUrl: imageurl,
+        slug: slug,
+        meta_title: meta_title,
+        meta_description: meta_description,
+        image_url: image_url,
         description: description,
       },
     });
-
-    return res.status(200).json(category);
+    return res.status(HttpCode.OK).json({
+      hasError: false,
+      message: 'Product category was creted successfully',
+    });
   } catch (error) {
-    console.log('[CATEGORY_ADD_ERROR]', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    //console.log('[CATEGORY_ADD_ERROR]', error);
+    next(
+      new HttpError({
+        httpCode: HttpCode.INTERNAL_SERVER_ERROR,
+        description: 'Internal server Error ' + error.message,
+      })
+    );
   }
 };

@@ -5,7 +5,8 @@
     "outDir": "dist",
     "baseUrl": "src",
     "sourceMap": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "target": "ESNext"
   },
   "include": ["src/**/*"]
 }
